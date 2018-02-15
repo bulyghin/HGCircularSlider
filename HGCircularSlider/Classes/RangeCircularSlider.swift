@@ -38,6 +38,14 @@ open class RangeCircularSlider: CircularSlider {
      */
     @IBInspectable
     open var startThumbTintColor: UIColor = UIColor.groupTableViewBackground
+
+    /**
+     * The minimal distance between thumbs
+     *
+     * The default value of this property is 0.
+     */
+    @IBInspectable
+    open var minDistance: CGFloat = 0
     
     /**
      * The color used to tint the stroke of the start thumb
@@ -277,8 +285,65 @@ open class RangeCircularSlider: CircularSlider {
         let startPoint = CGPoint(x: bounds.center.x, y: 0)
         
         let oldValue: CGFloat = selectedThumb.isStart ? startPointValue : endPointValue
-        let value =  newValue(from: oldValue, touch: touchPosition, start: startPoint)
-        
+        var value =  newValue(from: oldValue, touch: touchPosition, start: startPoint)
+        print(value)
+        if minDistance != 0 {
+            if abs(oldValue - value) < minDistance / 2 {
+                value = oldValue
+            } else {
+                if value > oldValue {
+                    if value + minDistance > maximumValue && oldValue - minDistance < 0 {
+                        value = maximumValue - minDistance
+                        if selectedThumb.isStart && value == endPointValue {
+                            value = maximumValue - 2 * minDistance
+                        } else if selectedThumb.isStart == false && value == startPointValue {
+                            value = maximumValue - 2 * minDistance
+                        }
+                    } else {
+                        value = oldValue + minDistance
+                        if selectedThumb.isStart && value == endPointValue {
+                            value = oldValue + 2 * minDistance <= maximumValue ? oldValue + 2 * minDistance : minDistance
+                        } else if selectedThumb.isStart == false && value == startPointValue {
+                            value = oldValue + 2 * minDistance <= maximumValue ? oldValue + 2 * minDistance : minDistance
+                        }
+                    }
+                    if value > maximumValue {
+                        value = minDistance
+                        if selectedThumb.isStart && value == endPointValue {
+                            value = 2 * minDistance
+                        } else if selectedThumb.isStart == false && value == startPointValue {
+                            value = 2 * minDistance
+                        }
+                    }
+                } else {
+                    if value - minDistance / 2 < 0 && oldValue + minDistance > maximumValue {
+                        value = 0
+                        if selectedThumb.isStart && value == endPointValue {
+                            value = minDistance
+                        } else if selectedThumb.isStart == false && value == startPointValue {
+                            value = minDistance
+                        }
+                    } else if value - minDistance / 2 < 0 {
+                        value = 0
+                        if selectedThumb.isStart && value == endPointValue {
+                            value = maximumValue - minDistance
+                        } else if selectedThumb.isStart == false && value == startPointValue {
+                            value = maximumValue - minDistance
+                        }
+                    } else {
+                        value = oldValue - minDistance
+                        if selectedThumb.isStart && value == endPointValue {
+                            value = oldValue - 2 * minDistance >= 0 ? oldValue - 2 * minDistance : maximumValue - minDistance
+                        } else if selectedThumb.isStart == false && value == startPointValue {
+                            value = oldValue - 2 * minDistance >= 0 ? oldValue - 2 * minDistance : maximumValue - minDistance
+                        }
+                    }
+
+                }
+
+            }
+        }
+        print(value)
         if selectedThumb.isStart {
             startPointValue = value
         } else {
