@@ -257,6 +257,32 @@ open class RangeCircularSlider: CircularSlider {
             startThumbCenter = drawThumb(withImage: image, angle: startAngle, inContext: context)
         }
     }
+
+    open func getDirection(from oldValue: CGFloat, touch touchPosition: CGPoint, start startPosition: CGPoint) -> Bool {
+        let angle = CircularSliderHelper.angle(betweenFirstPoint: startPosition, secondPoint: touchPosition, inCircleWithCenter: bounds.center)
+        let interval = Interval(min: minimumValue, max: maximumValue, rounds: numberOfRounds)
+        let deltaValue = minDistance == 0 ? CircularSliderHelper.delta(in: interval, for: angle, oldValue: oldValue) : CircularSliderHelper.delta(in: interval, for: angle, oldValue: oldValue) - CircularSliderHelper.delta(in: interval, for: angle, oldValue: oldValue).truncatingRemainder(dividingBy: minDistance)
+
+        let newValue = oldValue + deltaValue
+        return newValue > oldValue
+    }
+
+    open override func newValue(from oldValue: CGFloat, touch touchPosition: CGPoint, start startPosition: CGPoint) -> CGFloat {
+        let angle = CircularSliderHelper.angle(betweenFirstPoint: startPosition, secondPoint: touchPosition, inCircleWithCenter: bounds.center)
+        let interval = Interval(min: minimumValue, max: maximumValue, rounds: numberOfRounds)
+        let deltaValue = minDistance == 0 ? CircularSliderHelper.delta(in: interval, for: angle, oldValue: oldValue) : CircularSliderHelper.delta(in: interval, for: angle, oldValue: oldValue) - CircularSliderHelper.delta(in: interval, for: angle, oldValue: oldValue).truncatingRemainder(dividingBy: minDistance)
+
+        var newValue = oldValue + deltaValue
+        let range = maximumValue - minimumValue
+
+        if newValue > maximumValue {
+            newValue -= range
+        }
+        else if newValue < minimumValue {
+            newValue += range
+        }
+        return newValue
+    }
     
     // MARK: User interaction methods
     
@@ -285,64 +311,78 @@ open class RangeCircularSlider: CircularSlider {
         let startPoint = CGPoint(x: bounds.center.x, y: 0)
         
         let oldValue: CGFloat = selectedThumb.isStart ? startPointValue : endPointValue
+        let direction = getDirection(from: oldValue, touch: touchPosition, start: startPoint)
         var value =  newValue(from: oldValue, touch: touchPosition, start: startPoint)
         print(value)
-        if minDistance != 0 {
-            if abs(oldValue - value) < minDistance / 2 {
-                value = oldValue
+        if selectedThumb.isStart && (value == endPointValue) || (value == minimumValue && endPointValue == maximumValue || value == maximumValue && endPointValue == minimumValue) {
+            if direction {
+                value = value + minDistance <= maximumValue ? value + minDistance : minDistance
             } else {
-                if value > oldValue {
-                    if value + minDistance > maximumValue && oldValue - minDistance < 0 {
-                        value = maximumValue - minDistance
-                        if selectedThumb.isStart && value == endPointValue {
-                            value = maximumValue - 2 * minDistance
-                        } else if selectedThumb.isStart == false && value == startPointValue {
-                            value = maximumValue - 2 * minDistance
-                        }
-                    } else {
-                        value = oldValue + minDistance
-                        if selectedThumb.isStart && value == endPointValue {
-                            value = oldValue + 2 * minDistance <= maximumValue ? oldValue + 2 * minDistance : minDistance
-                        } else if selectedThumb.isStart == false && value == startPointValue {
-                            value = oldValue + 2 * minDistance <= maximumValue ? oldValue + 2 * minDistance : minDistance
-                        }
-                    }
-                    if value > maximumValue {
-                        value = minDistance
-                        if selectedThumb.isStart && value == endPointValue {
-                            value = 2 * minDistance
-                        } else if selectedThumb.isStart == false && value == startPointValue {
-                            value = 2 * minDistance
-                        }
-                    }
-                } else {
-                    if value - minDistance / 2 < 0 && oldValue + minDistance > maximumValue {
-                        value = 0
-                        if selectedThumb.isStart && value == endPointValue {
-                            value = minDistance
-                        } else if selectedThumb.isStart == false && value == startPointValue {
-                            value = minDistance
-                        }
-                    } else if value - minDistance / 2 < 0 {
-                        value = 0
-                        if selectedThumb.isStart && value == endPointValue {
-                            value = maximumValue - minDistance
-                        } else if selectedThumb.isStart == false && value == startPointValue {
-                            value = maximumValue - minDistance
-                        }
-                    } else {
-                        value = oldValue - minDistance
-                        if selectedThumb.isStart && value == endPointValue {
-                            value = oldValue - 2 * minDistance >= 0 ? oldValue - 2 * minDistance : maximumValue - minDistance
-                        } else if selectedThumb.isStart == false && value == startPointValue {
-                            value = oldValue - 2 * minDistance >= 0 ? oldValue - 2 * minDistance : maximumValue - minDistance
-                        }
-                    }
-
-                }
-
+                value = value - minDistance >= 0 ? value - minDistance : maximumValue - minDistance
+            }
+        } else if selectedThumb.isStart == false && (value == startPointValue) || (value == minimumValue && startPointValue == maximumValue || value == maximumValue && startPointValue == minimumValue) {
+            if direction {
+                value = value + minDistance <= maximumValue ? value + minDistance : minDistance
+            } else {
+                value = value - minDistance >= 0 ? value - minDistance : maximumValue - minDistance
             }
         }
+//        if minDistance != 0 {
+//            if abs(oldValue - value) < minDistance / 2 {
+//                value = oldValue
+//            } else {
+//                if value > oldValue {
+//                    if value + minDistance > maximumValue && oldValue - minDistance < 0 {
+//                        value = maximumValue - minDistance
+//                        if selectedThumb.isStart && value == endPointValue {
+//                            value = maximumValue - 2 * minDistance
+//                        } else if selectedThumb.isStart == false && value == startPointValue {
+//                            value = maximumValue - 2 * minDistance
+//                        }
+//                    } else {
+//                        value = oldValue + minDistance
+//                        if selectedThumb.isStart && value == endPointValue {
+//                            value = oldValue + 2 * minDistance <= maximumValue ? oldValue + 2 * minDistance : minDistance
+//                        } else if selectedThumb.isStart == false && value == startPointValue {
+//                            value = oldValue + 2 * minDistance <= maximumValue ? oldValue + 2 * minDistance : minDistance
+//                        }
+//                    }
+//                    if value > maximumValue {
+//                        value = minDistance
+//                        if selectedThumb.isStart && value == endPointValue {
+//                            value = 2 * minDistance
+//                        } else if selectedThumb.isStart == false && value == startPointValue {
+//                            value = 2 * minDistance
+//                        }
+//                    }
+//                } else {
+//                    if value - minDistance / 2 < 0 && oldValue + minDistance > maximumValue {
+//                        value = 0
+//                        if selectedThumb.isStart && value == endPointValue {
+//                            value = minDistance
+//                        } else if selectedThumb.isStart == false && value == startPointValue {
+//                            value = minDistance
+//                        }
+//                    } else if value - minDistance / 2 < 0 {
+//                        value = 0
+//                        if selectedThumb.isStart && value == endPointValue {
+//                            value = maximumValue - minDistance
+//                        } else if selectedThumb.isStart == false && value == startPointValue {
+//                            value = maximumValue - minDistance
+//                        }
+//                    } else {
+//                        value = oldValue - minDistance
+//                        if selectedThumb.isStart && value == endPointValue {
+//                            value = oldValue - 2 * minDistance >= 0 ? oldValue - 2 * minDistance : maximumValue - minDistance
+//                        } else if selectedThumb.isStart == false && value == startPointValue {
+//                            value = oldValue - 2 * minDistance >= 0 ? oldValue - 2 * minDistance : maximumValue - minDistance
+//                        }
+//                    }
+//
+//                }
+//
+//            }
+//        }
         print(value)
         if selectedThumb.isStart {
             startPointValue = value
