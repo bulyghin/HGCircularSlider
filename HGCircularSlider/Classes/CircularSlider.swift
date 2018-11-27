@@ -126,6 +126,7 @@ open class CircularSlider: UIControl {
      *
      * The default value of this property is nil
      */
+    @IBInspectable
     open var endThumbImage: UIImage?
     
     // MARK: Accessing the Slider’s Value Limits
